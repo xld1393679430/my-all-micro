@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        // 单应用切换 使用沙箱  切换页面是丢弃某些属性， 切换回来时补充丢弃的属性
+        // js沙箱 
+        // 1, proxy （浏览器支持性不太好）
+        // 2, 快照沙箱 （qiankun）
+
+        class SnapshotSandbox {
+            constructor() {
+                this.proxy = window
+                this.modifyPropMap = {}
+                this.active()
+            }
+
+            active() {
+                this.windowSnapshot = {}
+                for(const prop in window){
+                    if (window.hasOwnProperty(prop)) { // 保存私有属性
+                        this.windowSnapshot[prop] = window[prop]
+                    }
+                }
+
+                Object.keys(this.modifyPropMap).forEach(prop => {
+                    window[prop] = this.modifyPropMap[prop]
+                })
+            }
+
+            inactive() {
+                for(const prop in window){
+                    if (window.hasOwnProperty(prop)) {
+                       if (window[prop] !== this.windowSnapshot[prop]) {
+                        this.modifyPropMap[prop] = window[prop]
+                        window[prop] = this.windowSnapshot[prop]
+                       }
+                    }
+                }
+            }
+        }
+
+        const sandbox = new SnapshotSandbox();
+
+        ((window) => {
+            window.a = 1
+            console.log('init, ', window.a);
+
+            sandbox.inactive()
+            console.log('inactive, ', window.a);
+
+            sandbox.active()
+            console.log('active, ', window.a);
+
+        })(sandbox.proxy)
+
+    </script>
+</body>
+</html>
